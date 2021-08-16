@@ -3,6 +3,8 @@
 #ifndef _DLIST_H
 #define _DLIST_H
 
+#include <stddef.h>
+
 /**
  * Simple double linked list implementation
  * 
@@ -24,7 +26,7 @@ struct dlist_node {
 /**
  * Initialize list
  * 
- * :param node: The list node to be intialized
+ * @param node: The list node to be intialized
  */
 static inline void dlist_init_node(struct dlist_node *node)
 {
@@ -45,8 +47,8 @@ static inline void _dlist_insert_between(struct dlist_node *add,
 /**
  * Add new node after specified node 
  * 
- * :param add: the new node
- * :param node: the node to add the element after
+ * @param add: the new node
+ * @param node: the node to add the element after
  */
 static inline void dlist_add(struct dlist_node *add,
 							struct dlist_node *node)
@@ -55,9 +57,33 @@ static inline void dlist_add(struct dlist_node *add,
 }
 
 /**
+ * Add new node before specified node 
+ * 
+ * @param add: the new node
+ * @param node: the node to add the element before
+ */
+static inline void dlist_add_tail(struct dlist_node *add,
+                            struct dlist_node *node)
+{
+	_dlist_insert_between(add, node->previous, node);
+}
+
+/**
+ * Delete a node from a list
+ * 
+ * @param del: the node to delete
+ */
+static inline void dlist_del(struct dlist_node *del)
+{
+	del->previous->next = del->next;
+	del->next->previous = del->previous;
+	dlist_init_node(del);
+}
+
+/**
  * Check if a list is empty
  * 
- * :param head: the head node of the list
+ * @param head: the head node of the list
  * :return: non-zero if list is empty.
  */
 static inline int dlist_is_empty(const struct dlist_node *head)
@@ -68,8 +94,8 @@ static inline int dlist_is_empty(const struct dlist_node *head)
 /**
  * Check if node is last element in the list
  * 
- * :param node: node to check
- * :param head: the head node of the list
+ * @param node: node to check
+ * @param head: the head node of the list
  * :return: non-zero if node is last element.
  */
 static inline int dlist_is_last(const struct dlist_node *node,
@@ -81,21 +107,32 @@ static inline int dlist_is_last(const struct dlist_node *node,
 /**
  * Iterate over all elements of the list
  * 
- * :param it: iterator of type :c:type:`dlist_node`
- * :param head: the head node of the list
+ * @param it: iterator of type :c:type:`dlist_node`
+ * @param head: the head node of the list
  */
 #define dlist_for_each(it, head) \
 	for (it = (head)->next; it != (head); it = it->next)
 
+
 /**
  * Get the containing struct of a dlist_node
  * 
- * :param ptr: the pointer to the dlist_node
- * :param type: the type of the container struct the dlist_node is embedded in
- * :param member: the name of the dlist_node member within the container struct
+ * @param ptr: the pointer to the dlist_node
+ * @param type: the type of the container struct the dlist_node is embedded in
+ * @param member: the name of the dlist_node member within the container struct
  */
-#define dlist_get_container(ptr, type, member) ({ \
-	void *__mptr = (void *)(ptr); \
-	((type *)(__mptr - offsetof(type, member))); })
+#define dlist_get_container(ptr, type, member) \
+    (type *)((char*)ptr - offsetof(type, member))
+
+/**
+ * Iterate over all containers of the elements of the list
+ * @param pos:    the type * to use as a loop cursor.
+ * @param head:   the head for your list.
+ * @param member: the name of the list_struct within the struct.
+ */
+#define dlist_for_each_container(it, it_type, head, member)              \
+    for (it = dlist_get_container((head)->next, it_type, member);  \
+         &it->member != (head);    \
+         it = dlist_get_container(it->member.next, it_type, member))
 
 #endif
